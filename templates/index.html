@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Student Pass/Fail Prediction using a 3-layer Feedforward Neural Network (FNN) in TensorFlow/Keras.">
+    <title>Student Pass/Fail Prediction | Feedforward Neural Network</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="badge">B.Tech ML Demonstration</div>
+            <h1 id="app-title">Student Pass/Fail Prediction</h1>
+            <p class="subtitle">Feedforward Neural Network (FNN)</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Prediction Form Card -->
+            <div class="card form-card">
+                <div class="card-header">
+                    <h2>Student Metrics Input</h2>
+                    <p class="card-description">Enter the student's academic and engagement metrics below to compute outcome probability.</p>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-error" id="error-alert" role="alert">
+                    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <form method="POST" action="/predict" class="prediction-form" id="prediction-form">
+                    <div class="form-group">
+                        <label for="study_hours">
+                            <span class="label-text">Study Hours</span>
+                            <span class="label-hint">(Daily self-study hours, 0 - 24)</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            id="study_hours" 
+                            name="study_hours" 
+                            step="any" 
+                            min="0" 
+                            max="24"
+                            placeholder="e.g. 7.5" 
+                            value="{{ study_hours }}" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="attendance">
+                            <span class="label-text">Attendance (%)</span>
+                            <span class="label-hint">(Percentage of classes attended, 0 - 100)</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            id="attendance" 
+                            name="attendance" 
+                            step="any" 
+                            min="0" 
+                            max="100"
+                            placeholder="e.g. 88.0" 
+                            value="{{ attendance }}" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="previous_marks">
+                            <span class="label-text">Previous Marks (%)</span>
+                            <span class="label-hint">(Previous exam score, 0 - 100)</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            id="previous_marks" 
+                            name="previous_marks" 
+                            step="any" 
+                            min="0" 
+                            max="100"
+                            placeholder="e.g. 80.0" 
+                            value="{{ previous_marks }}" 
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" id="predict-btn" class="btn btn-primary">
+                        Predict Outcome
+                    </button>
+                </form>
+            </div>
+
+            {% if result %}
+            <!-- Result Section -->
+            <div class="card result-card {% if result.prediction == 'PASS' %}result-pass{% else %}result-fail{% endif %}" id="result-section">
+                <div class="card-header">
+                    <h2>Prediction Result</h2>
+                    <span class="result-status-tag {% if result.prediction == 'PASS' %}status-pass{% else %}status-fail{% endif %}">
+                        {{ result.prediction }}
+                    </span>
+                </div>
+
+                <div class="result-display">
+                    <div class="prediction-badge {% if result.prediction == 'PASS' %}badge-pass{% else %}badge-fail{% endif %}">
+                        <span class="outcome-label">Final Outcome</span>
+                        <span class="outcome-value">{{ result.prediction }}</span>
+                    </div>
+
+                    <div class="probability-grid">
+                        <div class="prob-box">
+                            <span class="prob-title">Pass Probability</span>
+                            <span class="prob-num pass-color">{{ result.pass_prob_pct }}</span>
+                            <div class="prob-bar-track">
+                                <div class="prob-bar-fill fill-pass" style="width: {{ result.pass_prob_pct }};"></div>
+                            </div>
+                        </div>
+                        <div class="prob-box">
+                            <span class="prob-title">Fail Probability</span>
+                            <span class="prob-num fail-color">{{ result.fail_prob_pct }}</span>
+                            <div class="prob-bar-track">
+                                <div class="prob-bar-fill fill-fail" style="width: {{ result.fail_prob_pct }};"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-summary">
+                    <h3>Submitted Features:</h3>
+                    <div class="summary-chips">
+                        <span class="chip"><strong>Study Hours:</strong> {{ result.study_hours }} hrs</span>
+                        <span class="chip"><strong>Attendance:</strong> {{ result.attendance }}%</span>
+                        <span class="chip"><strong>Previous Marks:</strong> {{ result.previous_marks }}%</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Model Info Specification Card -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h2>Model Specification</h2>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Architecture:</span>
+                        <span class="info-val">3 → 8 → 4 → 1</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Activations:</span>
+                        <span class="info-val">ReLU → ReLU → Sigmoid</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Trainable Parameters:</span>
+                        <span class="info-val">73</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Decision Threshold:</span>
+                        <span class="info-val">0.50 (≥ 0.5 Pass, &lt; 0.5 Fail)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Input Features:</span>
+                        <span class="info-val">Study Hours, Attendance, Previous Marks</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Preprocessing:</span>
+                        <span class="info-val">StandardScaler (fitted on training split)</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <p>Student Pass/Fail Prediction — Feedforward Neural Network (Local Academic Demo)</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -208,3 +208,131 @@ def test_prediction_pipeline(setup_dataset):
         validate_inputs(study_hours=5.0, attendance=110.0, previous_marks=70.0)
     with pytest.raises(ValueError):
         validate_inputs(study_hours=5.0, attendance=80.0, previous_marks=150.0)
+
+
+# ==========================================
+# FLASK WEB INTERFACE TESTS
+# ==========================================
+
+@pytest.fixture
+def client():
+    """Create Flask test client."""
+    from app import app
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
+
+
+def test_flask_app_import_and_artifacts():
+    """Test 9: Verify Flask app imports and loads saved model/scaler artifacts."""
+    from app import app, model, scaler
+    assert app is not None
+    assert model is not None
+    assert scaler is not None
+    assert model.count_params() == 73
+
+
+def test_flask_root_route_get(client):
+    """Test 10: Verify GET / returns HTTP 200 and contains form elements."""
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Student Pass/Fail Prediction" in html
+    assert "Study Hours" in html
+    assert "Attendance" in html
+    assert "Previous Marks" in html
+
+
+def test_flask_predict_valid_pass_input(client):
+    """Test 11: Verify valid high-performing student input yields PASS with correct probabilities."""
+    response = client.post(
+        "/predict",
+        data={
+            "study_hours": "7.5",
+            "attendance": "88",
+            "previous_marks": "80",
+        },
+    )
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Prediction Result" in html
+    assert "PASS" in html
+    assert "Pass Probability" in html
+    assert "Fail Probability" in html
+
+
+def test_flask_predict_valid_fail_input(client):
+    """Test 12: Verify valid low-performing student input yields FAIL."""
+    response = client.post(
+        "/predict",
+        data={
+            "study_hours": "2.0",
+            "attendance": "50",
+            "previous_marks": "40",
+        },
+    )
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Prediction Result" in html
+    assert "FAIL" in html
+
+
+def test_flask_predict_invalid_attendance(client):
+    """Test 13: Verify out-of-bounds attendance is rejected gracefully with validation message."""
+    # Test attendance > 100
+    response_high = client.post(
+        "/predict",
+        data={
+            "study_hours": "5.0",
+            "attendance": "150",
+            "previous_marks": "75",
+        },
+    )
+    assert response_high.status_code == 200
+    html_high = response_high.get_data(as_text=True)
+    assert "Attendance must be numeric and between 0.0% and 100.0%." in html_high
+    assert "Prediction Result" not in html_high
+
+    # Test attendance < 0
+    response_low = client.post(
+        "/predict",
+        data={
+            "study_hours": "5.0",
+            "attendance": "-10",
+            "previous_marks": "75",
+        },
+    )
+    assert response_low.status_code == 200
+    html_low = response_low.get_data(as_text=True)
+    assert "Attendance must be numeric and between 0.0% and 100.0%." in html_low
+
+
+def test_flask_predict_invalid_study_hours(client):
+    """Test 14: Verify negative study hours are rejected gracefully with validation message."""
+    response = client.post(
+        "/predict",
+        data={
+            "study_hours": "-2",
+            "attendance": "85",
+            "previous_marks": "75",
+        },
+    )
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Study Hours must be numeric and between 0.0 and 24.0 hours." in html
+    assert "Prediction Result" not in html
+
+
+def test_flask_predict_non_numeric_input(client):
+    """Test 15: Verify non-numeric input strings are rejected gracefully without 500 error."""
+    response = client.post(
+        "/predict",
+        data={
+            "study_hours": "abc",
+            "attendance": "85",
+            "previous_marks": "75",
+        },
+    )
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Study Hours must be a valid numeric value." in html
