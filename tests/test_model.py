@@ -592,3 +592,66 @@ def test_api_predict_nan_and_inf(client):
     assert response_nan.status_code == 400
     assert response_nan.is_json
     assert response_nan.get_json()["success"] is False
+# ==========================================
+# PHASE F.1 INTERACTIVE & SCENARIO API TESTS
+# ==========================================
+
+def test_api_predict_boundary_inputs(client):
+    """Test 31: Verify boundary values (0.0 and maximum thresholds) evaluate successfully."""
+    # Minimum valid bounds
+    payload_min = {"study_hours": 0.0, "attendance": 0.0, "previous_marks": 0.0}
+    res_min = client.post("/api/predict", data=json.dumps(payload_min), content_type="application/json")
+    assert res_min.status_code == 200
+    assert res_min.get_json()["success"] is True
+    assert res_min.get_json()["prediction"] == "FAIL"
+
+    # Maximum valid bounds
+    payload_max = {"study_hours": 24.0, "attendance": 100.0, "previous_marks": 100.0}
+    res_max = client.post("/api/predict", data=json.dumps(payload_max), content_type="application/json")
+    assert res_max.status_code == 200
+    assert res_max.get_json()["success"] is True
+    assert res_max.get_json()["prediction"] == "PASS"
+
+
+def test_api_predict_scenario_comparison_shift(client):
+    """Test 32: Verify comparison between baseline student and improved scenario produces valid probability delta."""
+    baseline_payload = {"study_hours": 2.5, "attendance": 60.0, "previous_marks": 45.0}
+    scenario_payload = {"study_hours": 7.5, "attendance": 90.0, "previous_marks": 85.0}
+
+    res_base = client.post("/api/predict", data=json.dumps(baseline_payload), content_type="application/json")
+    res_scen = client.post("/api/predict", data=json.dumps(scenario_payload), content_type="application/json")
+
+    assert res_base.status_code == 200
+    assert res_scen.status_code == 200
+
+    base_data = res_base.get_json()
+    scen_data = res_scen.get_json()
+
+    assert base_data["success"] is True and scen_data["success"] is True
+    # Scenario has higher study hours, attendance and marks -> higher pass probability
+    assert scen_data["pass_probability"] > base_data["pass_probability"]
+    delta_pp = (scen_data["pass_probability"] - base_data["pass_probability"]) * 100
+    assert delta_pp > 0
+
+
+def test_api_predict_string_numeric_coercion(client):
+    """Test 33: Verify API gracefully parses string-encoded numbers in JSON payload."""
+    payload = {"study_hours": "6.5", "attendance": "82.0", "previous_marks": "74.5"}
+    response = client.post("/api/predict", data=json.dumps(payload), content_type="application/json")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["success"] is True
+    assert data["study_hours"] == 6.5
+    assert data["attendance"] == 82.0
+    assert data["previous_marks"] == 74.5
+
+
+def test_static_assets_serving(client):
+    """Test 34: Verify static CSS and JS are served with HTTP 200."""
+    css_res = client.get("/static/style.css")
+    assert css_res.status_code == 200
+    assert "EduRisk" in css_res.get_data(as_text=True) or "Phase F.1" in css_res.get_data(as_text=True)
+
+    js_res = client.get("/static/script.js")
+    assert js_res.status_code == 200
+    assert "queryPredictionApi" in js_res.get_data(as_text=True)

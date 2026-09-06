@@ -153,14 +153,16 @@ Evaluated strictly on the **45 held-out synthetic test samples** (`src/evaluate.
 
 ---
 
-## 🖥️ Web Dashboard & What-If Analysis
+## 🖥️ Web Dashboard & Interactive Scenario Analytics (Phase F.1)
 
-The web application provides a comprehensive risk assessment workspace:
-- **Synchronized Controls**: Bidirectional number inputs and range sliders with live bound validation checkmarks.
-- **Result Telemetry**: Prominent PASS/FAIL classification badge, class confidence score, and dual horizontal probability meters.
-- **Performance Snapshot**: Clean matrix summarizing submitted features, classification verdict, and predicted probability.
-- **What-If Scenario Simulation**: An interactive comparison tool allowing users to test alternative feature values side-by-side against current predictions without retraining the model.
-- **Visual Artifacts Gallery**: Embedded neural network topology diagram, training/validation loss and accuracy curves, and confusion matrix heatmap.
+The web application provides an interactive academic performance prediction and What-If scenario analysis workspace:
+- **Synchronized Controls**: Bidirectional numeric inputs and smooth range sliders with live bound validation.
+- **Dynamic Student Input Profile**: Real-time visual horizontal meters reflecting entered input values relative to valid domain bounds (Study Hours $X/24$, Attendance $X/100$, Previous Marks $X/100$) with descriptive profile categorization.
+- **Dual-Inference What-If Scenario Simulation**: Compares Baseline Student against Simulated Scenario Student by querying the live `/api/predict` endpoint in parallel.
+- **Comparative Probability Distribution**: Animated comparative progress meters showing PASS/FAIL distribution shifts between baseline and hypothetical scenarios.
+- **Scenario Impact Summary**: Exact delta calculations reporting PASS probability shifts in percentage points (`+17.16 percentage points`), outcome transitions (`FAIL → PASS`), and feature deltas.
+- **Deterministic Non-Causal Interpretation**: Objective explanations of model behavior without unfounded causal claims.
+- **Model Architecture & Diagnostics**: Visual neural network topology flow diagram and held-out test set confusion matrix benchmarks.
 
 ---
 
@@ -292,7 +294,7 @@ Execute the complete automated test suite:
 pytest -v
 ```
 
-The test suite in `tests/test_model.py` runs **30 automated tests**:
+The test suite in `tests/test_model.py` runs **35 automated tests**:
 1. `test_dataset_columns`: Asserts required columns exist without missing values.
 2. `test_target_classes`: Validates binary classes `{0, 1}` and balanced ratio.
 3. `test_model_input_shape`: Validates model input shape is `(None, 3)`.
@@ -323,6 +325,11 @@ The test suite in `tests/test_model.py` runs **30 automated tests**:
 28. `test_api_predict_out_of_range`: Validates out-of-range API inputs return HTTP 400.
 29. `test_api_predict_non_json_content_type`: Validates non-JSON content types return HTTP 400.
 30. `test_api_predict_nan_and_inf`: Validates `NaN` and `Infinity` values are rejected by API validation.
+31. `test_api_predict_boundary_inputs`: Asserts minimum (0.0) and maximum domain boundaries evaluate correctly.
+32. `test_api_predict_scenario_comparison_shift`: Verifies scenario comparisons yield valid positive probability shifts on improved academic metrics.
+33. `test_api_predict_string_numeric_coercion`: Verifies API gracefully parses string-encoded numbers in JSON payloads.
+34. `test_static_assets_serving`: Verifies static CSS and JS are served with HTTP 200.
+35. `test_index_contains_dynamic_elements`: Verifies dashboard DOM includes dynamic scenario simulator and live profile hooks.
 
 ---
 

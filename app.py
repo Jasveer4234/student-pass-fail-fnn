@@ -1,8 +1,8 @@
-"""Flask Web Application for Student Performance Prediction & Risk Analytics.
+"""Flask Web Application for Student Performance Prediction.
 
-Serves a production-hardened web interface, What-If scenario inference, and
-a RESTful prediction API using the pre-trained 73-parameter Feedforward
-Neural Network (FNN) and fitted StandardScaler.
+Serves a production-hardened web interface and RESTful prediction API
+using the pre-trained 73-parameter Feedforward Neural Network (FNN)
+and fitted StandardScaler.
 """
 
 import logging
@@ -249,6 +249,9 @@ def api_predict():
             "success": False,
             "error": "An unexpected server error occurred during inference."
         }), 500
+
+
+
 
 
 @app.route("/outputs/<path:filename>", methods=["GET"])
