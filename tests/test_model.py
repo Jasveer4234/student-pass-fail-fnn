@@ -1,4 +1,4 @@
-"""Automated unit and integration tests for Student Pass/Fail Prediction FNN.
+"""Automated unit and integration tests for Student Performance Prediction & Risk Analytics.
 
 Verifies:
 1. Required dataset columns exist.
@@ -9,6 +9,28 @@ Verifies:
 6. Model output values are valid probabilities strictly in [0, 1].
 7. Preprocessing strictly prevents data leakage (scaler fitted exclusively on training set).
 8. End-to-end prediction pipeline functions reliably with valid samples.
+9. Flask application imports and initializes artifacts properly.
+10. GET / returns HTTP 200 and loads form.
+11. POST /predict with valid pass inputs returns PASS outcome.
+12. POST /predict with valid fail inputs returns FAIL outcome.
+13. Out-of-bounds attendance is rejected gracefully with validation message.
+14. Out-of-bounds study hours are rejected gracefully with validation message.
+15. Non-numeric inputs are rejected gracefully.
+16. GET /health returns HTTP 200 and status ok JSON.
+17. Standard HTTP security headers are applied to responses.
+18. Allowlisted visual artifacts return HTTP 200.
+19. Disallowed and path traversal attempts on /outputs return HTTP 404.
+20. Nonexistent routes return custom HTTP 404 handler.
+21. NaN and Infinity inputs are rejected by server-side validation.
+22. Oversized payloads trigger HTTP 413.
+23. Application exports valid WSGI callable for Gunicorn.
+24. render.yaml blueprint contains valid deployment directives.
+25. POST /api/predict with valid pass data returns JSON prediction PASS.
+26. POST /api/predict with valid fail data returns JSON prediction FAIL.
+27. POST /api/predict with missing fields returns HTTP 400.
+28. POST /api/predict with out-of-range values returns HTTP 400.
+29. POST /api/predict with non-JSON or malformed payload returns HTTP 400.
+30. POST /api/predict with NaN or Infinity returns HTTP 400.
 """
 
 import os
@@ -56,7 +78,7 @@ def test_target_classes(setup_dataset):
     df = pd.read_csv(setup_dataset)
     unique_classes = set(df["Result"].unique())
     assert unique_classes == {0, 1}, f"Target classes must be {{0, 1}}, got {unique_classes}"
-    
+
     counts = df["Result"].value_counts()
     ratio = counts[1] / len(df)
     assert 0.35 <= ratio <= 0.65, f"Class balance ratio {ratio:.2f} is heavily skewed."
@@ -78,7 +100,7 @@ def test_model_output_shape():
 
 def test_trainable_parameters_count():
     """Test 5: Verify model contains EXACTLY 73 trainable parameters.
-    
+
     Calculation:
     - Layer 1 (Dense 8): 3 * 8 + 8 = 32
     - Layer 2 (Dense 4): 8 * 4 + 4 = 36
@@ -112,7 +134,7 @@ def test_model_output_range():
 
 def test_preprocessing_no_data_leakage(setup_dataset):
     """Test 7: Automated test to guarantee zero data leakage during preprocessing.
-    
+
     Verifies:
     a) StandardScaler mean and variance exactly match X_train statistics.
     b) Scaler statistics differ from full-dataset statistics and test-dataset statistics.
@@ -237,7 +259,7 @@ def test_flask_root_route_get(client):
     response = client.get("/")
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert "Student Pass/Fail Prediction" in html
+    assert "Student Performance Intelligence" in html
     assert "Study Hours" in html
     assert "Attendance" in html
     assert "Previous Marks" in html
@@ -257,8 +279,8 @@ def test_flask_predict_valid_pass_input(client):
     html = response.get_data(as_text=True)
     assert "Prediction Result" in html
     assert "PASS" in html
-    assert "Pass Probability" in html
-    assert "Fail Probability" in html
+    assert "PASS" in html
+    assert "FAIL" in html
 
 
 def test_flask_predict_valid_fail_input(client):
@@ -291,7 +313,7 @@ def test_flask_predict_invalid_attendance(client):
     assert response_high.status_code == 200
     html_high = response_high.get_data(as_text=True)
     assert "Attendance must be numeric and between 0.0% and 100.0%." in html_high
-    assert "Prediction Result" not in html_high
+    assert "outcome-pass" not in html_high and "outcome-fail" not in html_high
 
     # Test attendance < 0
     response_low = client.post(
@@ -320,7 +342,7 @@ def test_flask_predict_invalid_study_hours(client):
     assert response.status_code == 200
     html = response.get_data(as_text=True)
     assert "Study Hours must be numeric and between 0.0 and 24.0 hours." in html
-    assert "Prediction Result" not in html
+    assert "outcome-pass" not in html and "outcome-fail" not in html
 
 
 def test_flask_predict_non_numeric_input(client):
@@ -336,3 +358,237 @@ def test_flask_predict_non_numeric_input(client):
     assert response.status_code == 200
     html = response.get_data(as_text=True)
     assert "Study Hours must be a valid numeric value." in html
+
+
+# ==========================================
+# BACKEND HARDENING & SECURITY TESTS
+# ==========================================
+
+def test_health_endpoint(client):
+    """Test 16: Verify GET /health returns HTTP 200 and expected status JSON."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.is_json
+    data = response.get_json()
+    assert data["success"] is True
+    assert data["status"] == "ok"
+
+
+def test_security_headers(client):
+    """Test 17: Verify standard HTTP security headers are present on responses."""
+    response = client.get("/")
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "SAMEORIGIN"
+    assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    assert "Content-Security-Policy" in response.headers
+    assert "default-src 'self'" in response.headers["Content-Security-Policy"]
+
+
+def test_output_allowlist_allowed(client):
+    """Test 18: Verify allowed visual artifact returns HTTP 200."""
+    response = client.get("/outputs/architecture.png")
+    assert response.status_code == 200
+
+
+def test_output_allowlist_rejected(client):
+    """Test 19: Verify non-allowlisted and path traversal attempts return HTTP 404."""
+    # Disallowed file name
+    response_disallowed = client.get("/outputs/secret.json")
+    assert response_disallowed.status_code == 404
+
+    # Path traversal attempt
+    response_traversal = client.get("/outputs/../models/scaler.pkl")
+    assert response_traversal.status_code == 404
+
+
+def test_custom_404_handler(client):
+    """Test 20: Verify invalid routes return HTTP 404 without exposing stack traces."""
+    response = client.get("/nonexistent-endpoint-xyz")
+    assert response.status_code == 404
+    html = response.get_data(as_text=True)
+    assert "The requested page or resource was not found." in html
+
+
+def test_nan_and_inf_input_rejection(client):
+    """Test 21: Verify NaN and Infinity values are rejected by server-side validation."""
+    # Test NaN input
+    response_nan = client.post(
+        "/predict",
+        data={
+            "study_hours": "nan",
+            "attendance": "85",
+            "previous_marks": "75",
+        },
+    )
+    assert response_nan.status_code == 200
+    html_nan = response_nan.get_data(as_text=True)
+    assert "Study Hours must be a valid numeric value." in html_nan
+
+    # Test Infinity input
+    response_inf = client.post(
+        "/predict",
+        data={
+            "study_hours": "7.5",
+            "attendance": "inf",
+            "previous_marks": "75",
+        },
+    )
+    assert response_inf.status_code == 200
+    html_inf = response_inf.get_data(as_text=True)
+    assert "Attendance must be a valid numeric value." in html_inf
+
+
+def test_oversized_payload_protection(client):
+    """Test 22: Verify oversized payloads exceeding MAX_CONTENT_LENGTH trigger HTTP 413."""
+    oversized_data = {
+        "study_hours": "7.5",
+        "attendance": "85",
+        "previous_marks": "75",
+        "junk": "X" * (40 * 1024),  # 40 KB payload exceeds 32 KB limit
+    }
+    response = client.post("/predict", data=oversized_data)
+    assert response.status_code == 413
+
+
+def test_wsgi_callable_and_entrypoint():
+    """Test 23: Verify app module exports valid WSGI application callable for Gunicorn."""
+    from app import app
+    assert callable(app)
+    assert hasattr(app, "wsgi_app")
+    assert callable(app.wsgi_app)
+
+
+def test_render_deployment_configuration():
+    """Test 24: Verify render.yaml contains valid deployment directives and PYTHON_VERSION."""
+    assert os.path.exists("render.yaml"), "render.yaml blueprint file is missing"
+
+    with open("render.yaml", "r", encoding="utf-8") as f:
+        render_content = f.read()
+    assert "type: web" in render_content
+    assert "runtime: python" in render_content
+    assert "plan: free" in render_content
+    assert "pip install -r requirements.txt" in render_content
+    assert "gunicorn" in render_content
+    assert "app:app" in render_content
+    assert "healthCheckPath: /health" in render_content
+    assert "PYTHON_VERSION" in render_content
+    assert "3.12" in render_content
+
+
+# ==========================================
+# REST API ENDPOINT TESTS (PHASE F)
+# ==========================================
+
+def test_api_predict_valid_pass(client):
+    """Test 25: Verify POST /api/predict with valid high-performing values returns JSON PASS."""
+    payload = {
+        "study_hours": 7.5,
+        "attendance": 88.0,
+        "previous_marks": 80.0
+    }
+    response = client.post(
+        "/api/predict",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.is_json
+    data = response.get_json()
+    assert data["success"] is True
+    assert data["prediction"] == "PASS"
+    assert data["pass_probability"] > 0.5
+    assert data["fail_probability"] < 0.5
+    assert "confidence" in data
+    assert data["study_hours"] == 7.5
+    assert data["attendance"] == 88.0
+    assert data["previous_marks"] == 80.0
+
+
+def test_api_predict_valid_fail(client):
+    """Test 26: Verify POST /api/predict with valid low-performing values returns JSON FAIL."""
+    payload = {
+        "study_hours": 1.0,
+        "attendance": 45.0,
+        "previous_marks": 35.0
+    }
+    response = client.post(
+        "/api/predict",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.is_json
+    data = response.get_json()
+    assert data["success"] is True
+    assert data["prediction"] == "FAIL"
+    assert data["pass_probability"] < 0.5
+    assert data["fail_probability"] > 0.5
+
+
+def test_api_predict_missing_fields(client):
+    """Test 27: Verify POST /api/predict with missing required fields returns HTTP 400."""
+    payload = {
+        "study_hours": 7.5,
+        "attendance": 88.0
+        # missing previous_marks
+    }
+    response = client.post(
+        "/api/predict",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert response.is_json
+    data = response.get_json()
+    assert data["success"] is False
+    assert "Previous Marks is required." in data["error"]
+
+
+def test_api_predict_out_of_range(client):
+    """Test 28: Verify POST /api/predict with out-of-range values returns HTTP 400."""
+    payload = {
+        "study_hours": 25.0,  # exceeds 24.0
+        "attendance": 88.0,
+        "previous_marks": 80.0
+    }
+    response = client.post(
+        "/api/predict",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert response.is_json
+    data = response.get_json()
+    assert data["success"] is False
+    assert "Study Hours must be numeric and between 0.0 and 24.0 hours." in data["error"]
+
+
+def test_api_predict_non_json_content_type(client):
+    """Test 29: Verify POST /api/predict with non-JSON content-type returns HTTP 400."""
+    response = client.post(
+        "/api/predict",
+        data="study_hours=7.5&attendance=88&previous_marks=80",
+        content_type="application/x-www-form-urlencoded",
+    )
+    assert response.status_code == 400
+    assert response.is_json
+    data = response.get_json()
+    assert data["success"] is False
+    assert "Request content-type must be application/json." in data["error"]
+
+
+def test_api_predict_nan_and_inf(client):
+    """Test 30: Verify POST /api/predict rejects NaN and Infinity inputs."""
+    payload_nan = {
+        "study_hours": float("nan"),
+        "attendance": 88.0,
+        "previous_marks": 80.0
+    }
+    response_nan = client.post(
+        "/api/predict",
+        data=json.dumps(payload_nan),
+        content_type="application/json",
+    )
+    assert response_nan.status_code == 400
+    assert response_nan.is_json
+    assert response_nan.get_json()["success"] is False

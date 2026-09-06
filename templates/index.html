@@ -3,179 +3,762 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Student Pass/Fail Prediction using a 3-layer Feedforward Neural Network (FNN) in TensorFlow/Keras.">
-    <title>Student Pass/Fail Prediction | Feedforward Neural Network</title>
+    <meta name="description" content="Student Performance Intelligence & Academic Risk Analytics Platform using a trained Feedforward Neural Network (FNN) in TensorFlow/Keras.">
+    <title>Student Performance Intelligence | Academic Risk Analytics Platform</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header Section -->
-        <header class="app-header">
-            <div class="badge">B.Tech ML Demonstration</div>
-            <h1 id="app-title">Student Pass/Fail Prediction</h1>
-            <p class="subtitle">Feedforward Neural Network (FNN)</p>
+    <div class="dashboard-wrapper">
+        <!-- Professional Application Header -->
+        <header class="dashboard-header" role="banner">
+            <div class="header-top-row">
+                <div class="brand-block">
+                    <span class="brand-badge">Academic Risk Analytics Platform</span>
+                    <h1 class="main-title" id="app-title">Student Performance Intelligence</h1>
+                    <p class="main-subtitle">An end-to-end machine learning system for predicting student academic outcomes.</p>
+                </div>
+                <div class="header-status-badge" aria-label="System status">
+                    <span class="status-dot-pulse" aria-hidden="true"></span>
+                    <span class="status-label">Model Ready • Active</span>
+                </div>
+            </div>
+
+            <!-- Hero Section with Compact Model Statistics -->
+            <div class="hero-box">
+                <div class="hero-text-col">
+                    <h2 class="hero-title">Predict Student Pass/Fail Outcomes</h2>
+                    <p class="hero-subtitle">Predict student Pass/Fail outcomes using a trained Feedforward Neural Network.</p>
+                    <p class="hero-statement">Trained with StandardScaler preprocessing fitted strictly on training data with early stopping and zero data leakage.</p>
+                </div>
+                <div class="hero-stats-grid">
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">MODEL</span>
+                        <span class="hero-stat-value">Feedforward NN</span>
+                    </div>
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">ACCURACY</span>
+                        <span class="hero-stat-value highlight-stat">93.33%</span>
+                    </div>
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">PARAMETERS</span>
+                        <span class="hero-stat-value">73</span>
+                    </div>
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">TEST SET</span>
+                        <span class="hero-stat-value">45 Samples</span>
+                    </div>
+                </div>
+            </div>
         </header>
 
-        <main class="main-content">
-            <!-- Prediction Form Card -->
-            <div class="card form-card">
+        <!-- Main Dashboard Grid (2-Column Layout on Desktop) -->
+        <main class="dashboard-grid" role="main">
+            <!-- Left Column: Input Control Panel -->
+            <section class="dashboard-card input-card" aria-labelledby="input-panel-title">
                 <div class="card-header">
-                    <h2>Student Metrics Input</h2>
-                    <p class="card-description">Enter the student's academic and engagement metrics below to compute outcome probability.</p>
+                    <div class="header-icon-title">
+                        <svg class="header-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <h2 id="input-panel-title">Student Performance Inputs</h2>
+                    </div>
+                    <span class="card-tag">3 Input Features</span>
                 </div>
 
                 {% if error %}
-                <div class="alert alert-error" id="error-alert" role="alert">
-                    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
+                <div class="alert-banner alert-error" id="error-alert" role="alert">
+                    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                     </svg>
-                    <span>{{ error }}</span>
+                    <div class="alert-text">{{ error }}</div>
                 </div>
                 {% endif %}
 
-                <form method="POST" action="/predict" class="prediction-form" id="prediction-form">
-                    <div class="form-group">
-                        <label for="study_hours">
-                            <span class="label-text">Study Hours</span>
-                            <span class="label-hint">(Daily self-study hours, 0 - 24)</span>
-                        </label>
-                        <input 
-                            type="number" 
-                            id="study_hours" 
-                            name="study_hours" 
-                            step="any" 
-                            min="0" 
-                            max="24"
-                            placeholder="e.g. 7.5" 
-                            value="{{ study_hours }}" 
-                            required
-                        >
+                <form method="POST" action="/predict" class="prediction-form" id="prediction-form" novalidate>
+                    <!-- Control 1: Study Hours -->
+                    <div class="control-group" id="group-study-hours">
+                        <div class="control-label-row">
+                            <label for="study_hours" class="control-label">1. Study Hours</label>
+                            <span class="unit-badge">0 – 24 hrs/day</span>
+                        </div>
+                        <p class="control-hint">Average daily self-study hours</p>
+
+                        <div class="input-slider-composite">
+                            <div class="number-input-wrapper">
+                                <input
+                                    type="number"
+                                    id="study_hours"
+                                    name="study_hours"
+                                    step="0.1"
+                                    min="0"
+                                    max="24"
+                                    placeholder="e.g. 7.5"
+                                    value="{{ study_hours }}"
+                                    required
+                                    aria-describedby="study-hours-hint"
+                                >
+                            </div>
+                            <div class="slider-wrapper">
+                                <input
+                                    type="range"
+                                    id="study_hours_range"
+                                    min="0"
+                                    max="24"
+                                    step="0.1"
+                                    value="{{ study_hours if study_hours else '7.5' }}"
+                                    aria-label="Study Hours Range Slider"
+                                >
+                                <div class="slider-bounds">
+                                    <span>0 hrs</span>
+                                    <span>12 hrs</span>
+                                    <span>24 hrs</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="attendance">
-                            <span class="label-text">Attendance (%)</span>
-                            <span class="label-hint">(Percentage of classes attended, 0 - 100)</span>
-                        </label>
-                        <input 
-                            type="number" 
-                            id="attendance" 
-                            name="attendance" 
-                            step="any" 
-                            min="0" 
-                            max="100"
-                            placeholder="e.g. 88.0" 
-                            value="{{ attendance }}" 
-                            required
-                        >
+                    <!-- Control 2: Attendance -->
+                    <div class="control-group" id="group-attendance">
+                        <div class="control-label-row">
+                            <label for="attendance" class="control-label">2. Attendance</label>
+                            <span class="unit-badge">0 – 100%</span>
+                        </div>
+                        <p class="control-hint">Classroom attendance percentage</p>
+
+                        <div class="input-slider-composite">
+                            <div class="number-input-wrapper">
+                                <input
+                                    type="number"
+                                    id="attendance"
+                                    name="attendance"
+                                    step="0.5"
+                                    min="0"
+                                    max="100"
+                                    placeholder="e.g. 88.0"
+                                    value="{{ attendance }}"
+                                    required
+                                    aria-describedby="attendance-hint"
+                                >
+                            </div>
+                            <div class="slider-wrapper">
+                                <input
+                                    type="range"
+                                    id="attendance_range"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value="{{ attendance if attendance else '88.0' }}"
+                                    aria-label="Attendance Percentage Range Slider"
+                                >
+                                <div class="slider-bounds">
+                                    <span>0%</span>
+                                    <span>50%</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="previous_marks">
-                            <span class="label-text">Previous Marks (%)</span>
-                            <span class="label-hint">(Previous exam score, 0 - 100)</span>
-                        </label>
-                        <input 
-                            type="number" 
-                            id="previous_marks" 
-                            name="previous_marks" 
-                            step="any" 
-                            min="0" 
-                            max="100"
-                            placeholder="e.g. 80.0" 
-                            value="{{ previous_marks }}" 
-                            required
-                        >
+                    <!-- Control 3: Previous Marks -->
+                    <div class="control-group" id="group-previous-marks">
+                        <div class="control-label-row">
+                            <label for="previous_marks" class="control-label">3. Previous Marks</label>
+                            <span class="unit-badge">0 – 100</span>
+                        </div>
+                        <p class="control-hint">Score in previous academic evaluations</p>
+
+                        <div class="input-slider-composite">
+                            <div class="number-input-wrapper">
+                                <input
+                                    type="number"
+                                    id="previous_marks"
+                                    name="previous_marks"
+                                    step="0.5"
+                                    min="0"
+                                    max="100"
+                                    placeholder="e.g. 80.0"
+                                    value="{{ previous_marks }}"
+                                    required
+                                    aria-describedby="previous-marks-hint"
+                                >
+                            </div>
+                            <div class="slider-wrapper">
+                                <input
+                                    type="range"
+                                    id="previous_marks_range"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
+                                    value="{{ previous_marks if previous_marks else '80.0' }}"
+                                    aria-label="Previous Marks Range Slider"
+                                >
+                                <div class="slider-bounds">
+                                    <span>0</span>
+                                    <span>50</span>
+                                    <span>100</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <button type="submit" id="predict-btn" class="btn btn-primary">
-                        Predict Outcome
-                    </button>
+                    <!-- Input Quality & Real-Time Validation Box -->
+                    <div class="input-quality-card" id="input-quality-panel" aria-live="polite">
+                        <div class="quality-header">
+                            <span class="quality-title">INPUT STATUS</span>
+                            <span class="quality-state-badge" id="quality-state-badge">Valid</span>
+                        </div>
+                        <div class="quality-checks-list">
+                            <div class="quality-check-item" id="check-sh">
+                                <span class="check-icon" id="icon-sh">✓</span>
+                                <span class="check-text" id="text-sh">Study Hours within valid range (0–24 hrs)</span>
+                            </div>
+                            <div class="quality-check-item" id="check-att">
+                                <span class="check-icon" id="icon-att">✓</span>
+                                <span class="check-text" id="text-att">Attendance within valid range (0–100%)</span>
+                            </div>
+                            <div class="quality-check-item" id="check-pm">
+                                <span class="check-icon" id="icon-pm">✓</span>
+                                <span class="check-text" id="text-pm">Previous Marks within valid range (0–100)</span>
+                            </div>
+                        </div>
+                        <p class="quality-footer-note" id="quality-footer-note">Ready for prediction.</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="button-group">
+                        <button type="submit" id="predict-btn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            <span id="btn-text">Analyze Performance</span>
+                        </button>
+                        <button type="button" id="reset-btn" class="btn btn-secondary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="1 4 1 10 7 10"></polyline>
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                            </svg>
+                            <span>Reset</span>
+                        </button>
+                    </div>
                 </form>
-            </div>
+            </section>
 
-            {% if result %}
-            <!-- Result Section -->
-            <div class="card result-card {% if result.prediction == 'PASS' %}result-pass{% else %}result-fail{% endif %}" id="result-section">
-                <div class="card-header">
-                    <h2>Prediction Result</h2>
-                    <span class="result-status-tag {% if result.prediction == 'PASS' %}status-pass{% else %}status-fail{% endif %}">
-                        {{ result.prediction }}
-                    </span>
-                </div>
-
-                <div class="result-display">
-                    <div class="prediction-badge {% if result.prediction == 'PASS' %}badge-pass{% else %}badge-fail{% endif %}">
-                        <span class="outcome-label">Final Outcome</span>
-                        <span class="outcome-value">{{ result.prediction }}</span>
+            <!-- Right Column: Output & What-If Panel -->
+            <section class="dashboard-card result-container" aria-labelledby="result-card-heading">
+                {% if result %}
+                <!-- Active Result Display -->
+                <div class="result-card {% if result.prediction == 'PASS' %}outcome-pass{% else %}outcome-fail{% endif %}" id="result-section">
+                    <div class="card-header">
+                        <div class="header-icon-title">
+                            <svg class="header-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            <h2 id="result-card-heading">Prediction Result</h2>
+                        </div>
+                        <span class="status-pill {% if result.prediction == 'PASS' %}pill-pass{% else %}pill-fail{% endif %}">
+                            {{ result.prediction }}
+                        </span>
                     </div>
 
-                    <div class="probability-grid">
-                        <div class="prob-box">
-                            <span class="prob-title">Pass Probability</span>
-                            <span class="prob-num pass-color">{{ result.pass_prob_pct }}</span>
-                            <div class="prob-bar-track">
-                                <div class="prob-bar-fill fill-pass" style="width: {{ result.pass_prob_pct }};"></div>
+                    <!-- Prominent Outcome Box -->
+                    <div class="outcome-hero-box {% if result.prediction == 'PASS' %}hero-pass{% else %}hero-fail{% endif %}">
+                        <div class="outcome-badge-icon">
+                            {% if result.prediction == 'PASS' %}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            {% else %}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="outcome-text-block">
+                            <span class="outcome-subtitle">PREDICTED CLASSIFICATION</span>
+                            <span class="outcome-verdict">{{ result.prediction }}</span>
+                        </div>
+                        <div class="confidence-block">
+                            <span class="confidence-label">Confidence</span>
+                            <span class="confidence-val">{{ result.confidence_pct }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Dual Horizontal Probability Meters -->
+                    <div class="probability-section">
+                        <h3 class="subsection-title">Model Class Probabilities</h3>
+
+                        <div class="prob-meter-group">
+                            <div class="prob-meter-header">
+                                <span class="prob-label">PASS</span>
+                                <span class="prob-value pass-text">{{ result.pass_prob_pct }}</span>
+                            </div>
+                            <div class="prob-track">
+                                <div class="prob-bar-fill fill-pass" style="width: {{ result.pass_prob_pct }};" role="progressbar" aria-valuenow="{{ result.pass_prob_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                         </div>
-                        <div class="prob-box">
-                            <span class="prob-title">Fail Probability</span>
-                            <span class="prob-num fail-color">{{ result.fail_prob_pct }}</span>
-                            <div class="prob-bar-track">
-                                <div class="prob-bar-fill fill-fail" style="width: {{ result.fail_prob_pct }};"></div>
+
+                        <div class="prob-meter-group">
+                            <div class="prob-meter-header">
+                                <span class="prob-label">FAIL</span>
+                                <span class="prob-value fail-text">{{ result.fail_prob_pct }}</span>
+                            </div>
+                            <div class="prob-track">
+                                <div class="prob-bar-fill fill-fail" style="width: {{ result.fail_prob_pct }};" role="progressbar" aria-valuenow="{{ result.fail_prob_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <p class="confidence-explanation">
+                            Model confidence is based on the predicted class probability.
+                        </p>
+                    </div>
+
+                    <!-- Performance Snapshot Table -->
+                    <div class="summary-section">
+                        <h3 class="subsection-title">PERFORMANCE SNAPSHOT</h3>
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="summary-label">Study Hours</span>
+                                <span class="summary-val">{{ result.study_hours }} hours</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Attendance</span>
+                                <span class="summary-val">{{ result.attendance }}%</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Previous Marks</span>
+                                <span class="summary-val">{{ result.previous_marks }}%</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Prediction</span>
+                                <span class="summary-val">{{ result.prediction }}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Probability</span>
+                                <span class="summary-val">{% if result.prediction == 'PASS' %}{{ result.pass_prob_pct }}{% else %}{{ result.fail_prob_pct }}{% endif %}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Threshold</span>
+                                <span class="summary-val">0.50</span>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Honest Interpretation -->
+                    <div class="interpretation-box">
+                        <h3 class="subsection-title">Interpretation</h3>
+                        <p class="interpretation-text">
+                            {{ result.interpretation }}
+                        </p>
+                    </div>
                 </div>
 
-                <div class="input-summary">
-                    <h3>Submitted Features:</h3>
-                    <div class="summary-chips">
-                        <span class="chip"><strong>Study Hours:</strong> {{ result.study_hours }} hrs</span>
-                        <span class="chip"><strong>Attendance:</strong> {{ result.attendance }}%</span>
-                        <span class="chip"><strong>Previous Marks:</strong> {{ result.previous_marks }}%</span>
+                {% elif not error %}
+                <!-- Empty State (Awaiting Submission) -->
+                <div class="empty-state-card" id="empty-state">
+                    <div class="empty-state-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                    </div>
+                    <h2 class="empty-title">Prediction Awaiting Input</h2>
+                    <p class="empty-description">
+                        Provide the student's study hours, attendance percentage, and previous exam score on the left, then click <strong>Analyze Performance</strong>.
+                    </p>
+                    <div class="empty-features-hint">
+                        <div class="hint-pill">1. Study Hours (0–24 hrs)</div>
+                        <div class="hint-pill">2. Attendance (0–100%)</div>
+                        <div class="hint-pill">3. Previous Marks (0–100)</div>
                     </div>
                 </div>
-            </div>
-            {% endif %}
 
-            <!-- Model Info Specification Card -->
-            <div class="card info-card">
-                <div class="card-header">
-                    <h2>Model Specification</h2>
+                {% else %}
+                <!-- Validation Error State -->
+                <div class="empty-state-card error-empty-state">
+                    <div class="empty-state-icon error-icon-bg">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <h2 class="empty-title">Validation Notice</h2>
+                    <p class="empty-description">
+                        Please review and correct the highlighted fields on the left before submitting for inference.
+                    </p>
                 </div>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Architecture:</span>
-                        <span class="info-val">3 → 8 → 4 → 1</span>
+                {% endif %}
+
+                <!-- Interactive What-If Scenario Analysis Section -->
+                <div class="what-if-card" id="what-if-section">
+                    <div class="card-header">
+                        <div class="header-icon-title">
+                            <svg class="header-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 14 14"></polyline>
+                            </svg>
+                            <h3>What-If Scenario Analysis</h3>
+                        </div>
+                        <span class="card-tag">Interactive Simulation</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Activations:</span>
-                        <span class="info-val">ReLU → ReLU → Sigmoid</span>
+
+                    <p class="card-subnote">
+                        Simulate alternative input scenarios using the exact same saved model, scaler, and 0.50 decision threshold (no model retraining).
+                    </p>
+
+                    <div class="what-if-inputs-grid">
+                        <div class="what-if-control">
+                            <label for="whatif_hours">Alt Study Hours (0–24)</label>
+                            <input type="number" id="whatif_hours" min="0" max="24" step="0.5" value="6.0">
+                        </div>
+                        <div class="what-if-control">
+                            <label for="whatif_att">Alt Attendance (0–100%)</label>
+                            <input type="number" id="whatif_att" min="0" max="100" step="1" value="75.0">
+                        </div>
+                        <div class="what-if-control">
+                            <label for="whatif_marks">Alt Prev Marks (0–100)</label>
+                            <input type="number" id="whatif_marks" min="0" max="100" step="1" value="65.0">
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Trainable Parameters:</span>
-                        <span class="info-val">73</span>
+
+                    <div class="what-if-btn-row">
+                        <button type="button" id="compare-whatif-btn" class="btn btn-secondary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="16 3 21 3 21 8"></polyline>
+                                <line x1="4" y1="20" x2="21" y2="3"></line>
+                                <polyline points="21 16 21 21 16 21"></polyline>
+                                <line x1="15" y1="15" x2="21" y2="21"></line>
+                                <line x1="4" y1="4" x2="9" y2="9"></line>
+                            </svg>
+                            <span>Compare Scenario</span>
+                        </button>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Decision Threshold:</span>
-                        <span class="info-val">0.50 (≥ 0.5 Pass, &lt; 0.5 Fail)</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Input Features:</span>
-                        <span class="info-val">Study Hours, Attendance, Previous Marks</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Preprocessing:</span>
-                        <span class="info-val">StandardScaler (fitted on training split)</span>
+
+                    <!-- Scenario Comparison Results Panel -->
+                    <div class="what-if-comparison-box" id="whatif-comparison-box" style="display: none;">
+                        <div class="comparison-grid">
+                            <div class="scenario-col" id="col-current-scenario">
+                                <span class="scenario-badge badge-current">CURRENT SCENARIO</span>
+                                <div class="scenario-detail" id="scen-curr-hours">Study Hours: <strong>7.5 hrs</strong></div>
+                                <div class="scenario-detail" id="scen-curr-att">Attendance: <strong>88.0%</strong></div>
+                                <div class="scenario-detail" id="scen-curr-marks">Previous Marks: <strong>80.0</strong></div>
+                                <div class="scenario-result-pill" id="scen-curr-pill">Prediction: PASS (99.99%)</div>
+                            </div>
+                            <div class="scenario-divider">➔</div>
+                            <div class="scenario-col" id="col-alt-scenario">
+                                <span class="scenario-badge badge-alt">ALTERNATIVE SCENARIO</span>
+                                <div class="scenario-detail" id="scen-alt-hours">Study Hours: <strong>6.0 hrs</strong></div>
+                                <div class="scenario-detail" id="scen-alt-att">Attendance: <strong>75.0%</strong></div>
+                                <div class="scenario-detail" id="scen-alt-marks">Previous Marks: <strong>65.0</strong></div>
+                                <div class="scenario-result-pill" id="scen-alt-pill">Prediction: PASS (88.40%)</div>
+                            </div>
+                        </div>
+                        <p class="whatif-interpretation" id="whatif-interpretation-text">
+                            Under the alternative input scenario, the model predicts PASS.
+                        </p>
                     </div>
                 </div>
-            </div>
+            </section>
         </main>
 
-        <footer class="app-footer">
-            <p>Student Pass/Fail Prediction — Feedforward Neural Network (Local Academic Demo)</p>
+        <!-- Information & Academic Specifications Section -->
+        <section class="model-info-wrapper" aria-labelledby="model-info-heading">
+            <div class="section-title-row">
+                <h2 id="model-info-heading">Model Information & Technical Architecture</h2>
+                <span class="badge badge-meta">Deterministic Specifications</span>
+            </div>
+
+            <div class="info-cards-grid">
+                <!-- Card 1: Model Information (Model Card) -->
+                <div class="dashboard-card info-card">
+                    <div class="card-header">
+                        <h3>MODEL INFORMATION</h3>
+                    </div>
+                    <div class="spec-table">
+                        <div class="spec-row">
+                            <span class="spec-key">Model Type</span>
+                            <span class="spec-val">Feedforward Neural Network</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Task</span>
+                            <span class="spec-val">Binary Classification</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Input Features</span>
+                            <span class="spec-val">3 (Study Hours, Attendance, Previous Marks)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Architecture</span>
+                            <span class="spec-val">3 → 8 → 4 → 1</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Hidden Activations</span>
+                            <span class="spec-val">ReLU</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Output Activation</span>
+                            <span class="spec-val">Sigmoid</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Parameters</span>
+                            <span class="spec-val highlight-val">73</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Loss</span>
+                            <span class="spec-val">Binary Crossentropy</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Optimizer</span>
+                            <span class="spec-val">Adam</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Scaling</span>
+                            <span class="spec-val">StandardScaler</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Decision Threshold</span>
+                            <span class="spec-val">0.50</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-key">Training</span>
+                            <span class="spec-val">EarlyStopping with restored best weights</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: How The AI Works & Technical Architecture -->
+                <div class="dashboard-card info-card">
+                    <div class="card-header">
+                        <h3>HOW THE AI WORKS</h3>
+                    </div>
+                    <div class="how-it-works-steps">
+                        <div class="step-row">
+                            <span class="step-num">1</span>
+                            <div class="step-content">
+                                <strong>INPUT FEATURES</strong>
+                                <p>The model receives three student performance features: Study Hours, Attendance, and Previous Marks.</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <span class="step-num">2</span>
+                            <div class="step-content">
+                                <strong>TRAINING-FITTED STANDARDIZATION</strong>
+                                <p>The same StandardScaler fitted strictly on training data (mean & variance) is applied during inference.</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <span class="step-num">3</span>
+                            <div class="step-content">
+                                <strong>DENSE LAYERS (8 + 4 Neurons + ReLU)</strong>
+                                <p>Two hidden Dense layers with non-linear ReLU activations compute latent representation vectors.</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <span class="step-num">4</span>
+                            <div class="step-content">
+                                <strong>OUTPUT LAYER (1 Neuron + Sigmoid)</strong>
+                                <p>The output neuron produces a calibrated continuous pass probability in [0.0, 1.0].</p>
+                            </div>
+                        </div>
+                        <div class="step-row">
+                            <span class="step-num">5</span>
+                            <div class="step-content">
+                                <strong>0.50 THRESHOLD → PASS / FAIL</strong>
+                                <p>A decision threshold of 0.50 converts that probability into final outcome: PASS or FAIL.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dataset Transparency Box -->
+                    <div class="dataset-transparency-box">
+                        <h4 class="subcard-title">DATASET OVERVIEW</h4>
+                        <div class="dataset-meta-grid">
+                            <div class="data-stat">
+                                <span class="data-stat-label">Total Records:</span>
+                                <span class="data-stat-val">300</span>
+                            </div>
+                            <div class="data-stat">
+                                <span class="data-stat-label">Input Features:</span>
+                                <span class="data-stat-val">3</span>
+                            </div>
+                            <div class="data-stat">
+                                <span class="data-stat-label">Output Classes:</span>
+                                <span class="data-stat-val">2 (Fail: 136, Pass: 164)</span>
+                            </div>
+                            <div class="data-stat">
+                                <span class="data-stat-label">Partition Split:</span>
+                                <span class="data-stat-val">70 / 15 / 15 (Train / Val / Test)</span>
+                            </div>
+                        </div>
+                        <p class="dataset-disclaimer">
+                            <strong>Synthetic educational dataset:</strong> Created for academic learning and demonstration. Does not represent actual student or institutional records.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Technical Architecture Flow -->
+            <div class="dashboard-card info-card evaluation-full-card">
+                <div class="card-header">
+                    <h3>TECHNICAL ARCHITECTURE</h3>
+                    <span class="badge badge-meta">Pipeline Lifecycle</span>
+                </div>
+                <div class="arch-lifecycle-flow">
+                    <div class="arch-box">Browser UI</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box">Flask Web Application</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box">Server-side Validation</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box">Training-fitted StandardScaler</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box">Saved TensorFlow/Keras Model</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box">Probability (0.0 – 1.0)</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box">0.50 Decision Threshold</div>
+                    <div class="arch-arr">↓</div>
+                    <div class="arch-box highlight-box">PASS / FAIL</div>
+                </div>
+                <p class="arch-note">
+                    Model and scaler artifacts are loaded once at startup into memory. Inference executes directly without model retraining. Held-out test evaluation is strictly decoupled from live serving.
+                </p>
+            </div>
+
+            <!-- Card 4: Evaluation Dashboard & Confusion Matrix -->
+            <div class="dashboard-card info-card evaluation-full-card">
+                <div class="card-header">
+                    <h3>HELD-OUT TEST PERFORMANCE</h3>
+                    <span class="badge badge-academic">45 Samples</span>
+                </div>
+                <p class="card-subnote">Metrics are calculated on the held-out test set (15% stratified split, random_state=42, zero data leakage).</p>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <span class="metric-number">93.33%</span>
+                        <span class="metric-title">Accuracy</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-number">92.31%</span>
+                        <span class="metric-title">Precision</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-number">96.00%</span>
+                        <span class="metric-title">Recall</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-number">94.12%</span>
+                        <span class="metric-title">F1 Score</span>
+                    </div>
+                </div>
+
+                <div class="cm-table-wrapper">
+                    <h4 class="subcard-title">Held-Out Test Confusion Matrix (45 Samples)</h4>
+                    <div class="cm-matrix-grid">
+                        <div class="cm-cell cm-header-cell">Actual / Predicted</div>
+                        <div class="cm-cell cm-header-cell">Predicted FAIL</div>
+                        <div class="cm-cell cm-header-cell">Predicted PASS</div>
+                        <div class="cm-cell cm-header-cell">Actual FAIL</div>
+                        <div class="cm-cell cm-data-cell cm-tn">
+                            <span class="cm-val">18</span>
+                            <span class="cm-lbl">True Negative</span>
+                        </div>
+                        <div class="cm-cell cm-data-cell cm-fp">
+                            <span class="cm-val">2</span>
+                            <span class="cm-lbl">False Positive</span>
+                        </div>
+                        <div class="cm-cell cm-header-cell">Actual PASS</div>
+                        <div class="cm-cell cm-data-cell cm-fn">
+                            <span class="cm-val">1</span>
+                            <span class="cm-lbl">False Negative</span>
+                        </div>
+                        <div class="cm-cell cm-data-cell cm-tp">
+                            <span class="cm-val">24</span>
+                            <span class="cm-lbl">True Positive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 5: Architecture Visuals & Gallery -->
+            <div class="dashboard-card architecture-card">
+                <div class="card-header">
+                    <h3>Visual Artifacts & Training History</h3>
+                </div>
+
+                <div class="topology-flow">
+                    <div class="flow-step">
+                        <span class="flow-title">Input Layer</span>
+                        <span class="flow-desc">3 Features</span>
+                    </div>
+                    <div class="flow-arrow" aria-hidden="true">→</div>
+                    <div class="flow-step">
+                        <span class="flow-title">Dense Layer 1</span>
+                        <span class="flow-desc">8 Neurons • ReLU</span>
+                    </div>
+                    <div class="flow-arrow" aria-hidden="true">→</div>
+                    <div class="flow-step">
+                        <span class="flow-title">Dense Layer 2</span>
+                        <span class="flow-desc">4 Neurons • ReLU</span>
+                    </div>
+                    <div class="flow-arrow" aria-hidden="true">→</div>
+                    <div class="flow-step">
+                        <span class="flow-title">Output Layer</span>
+                        <span class="flow-desc">1 Neuron • Sigmoid</span>
+                    </div>
+                    <div class="flow-arrow" aria-hidden="true">→</div>
+                    <div class="flow-step highlight-step">
+                        <span class="flow-title">Outcome</span>
+                        <span class="flow-desc">Pass / Fail</span>
+                    </div>
+                </div>
+
+                <div class="visual-gallery-grid">
+                    <div class="gallery-item">
+                        <span class="gallery-caption">1. Neural Network Architecture</span>
+                        <img src="/outputs/architecture.png" alt="Neural network architecture diagram showing 3 input features, Dense 8 ReLU, Dense 4 ReLU, and Dense 1 Sigmoid output." class="gallery-img" loading="lazy">
+                    </div>
+                    <div class="gallery-item">
+                        <span class="gallery-caption">2. Training & Validation History</span>
+                        <img src="/outputs/training_history.png" alt="Training and validation loss and accuracy curves across training epochs showing early stopping." class="gallery-img" loading="lazy">
+                    </div>
+                    <div class="gallery-item">
+                        <span class="gallery-caption">3. Confusion Matrix Heatmap</span>
+                        <img src="/outputs/confusion_matrix.png" alt="Annotated confusion matrix heatmap on 45 held-out test samples." class="gallery-img" loading="lazy">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 6: Limitations & Responsible AI -->
+            <div class="dashboard-card info-card evaluation-full-card">
+                <div class="card-header">
+                    <h3>LIMITATIONS & RESPONSIBLE USE</h3>
+                </div>
+                <ul class="limitations-list">
+                    <li><strong>Dataset is synthetic:</strong> The model was trained and evaluated on synthetic educational records designed for demonstration and learning.</li>
+                    <li><strong>Feature scope:</strong> The model uses only three features (Study Hours, Attendance, Previous Marks) and cannot account for socioeconomic, health, or institutional factors.</li>
+                    <li><strong>Probabilistic predictions:</strong> Predictions represent model probability estimates under a 0.50 threshold, not definitive certainties.</li>
+                    <li><strong>No automated decisions:</strong> This tool should not be used as the sole basis for high-stakes academic decisions, grading, or disciplinary actions.</li>
+                    <li><strong>Generalization disclaimer:</strong> Performance on synthetic data does not guarantee equivalent performance on real-world student populations.</li>
+                    <li><strong>Interpretation:</strong> Predictions should always be interpreted as machine learning outputs requiring human academic oversight.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Academic Footer -->
+        <footer class="dashboard-footer" role="contentinfo">
+            <p><strong>Student Performance Intelligence</strong> — Academic Risk Analytics Platform</p>
+            <p class="footer-note">Feedforward Neural Network (73 parameters) • TensorFlow/Keras • StandardScaler • Render WSGI deployment ready.</p>
         </footer>
     </div>
+
+    <!-- Frontend Script for Interactive Synchronization, Validation, & What-If -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
